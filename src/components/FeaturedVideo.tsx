@@ -4,10 +4,10 @@ import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
 type FeaturedVideo = {
-  media_url: string;
+  url: string;
   title: string | null;
   caption: string | null;
-  linked_post_id: string | null;
+  post_id: string | null;
   post_slug?: string | null;
 };
 
@@ -27,13 +27,13 @@ const FeaturedVideo = () => {
     const fetchFeaturedVideo = async () => {
       try {
         console.log('Fetching featured video...');
-        // First fetch the featured video
+        // Fetch the featured video from media table
         const { data, error } = await supabase
-          .from('featured_media')
-          .select('media_url, title, caption, linked_post_id')
+          .from('media')
+          .select('url, title, caption, post_id')
           .eq('media_type', 'video')
-          .eq('is_active', true)
-          .order('display_order', { ascending: true })
+          .eq('is_featured_video_section', true)
+          .order('featured_sort_order', { ascending: true })
           .limit(1)
           .single();
 
@@ -43,10 +43,10 @@ const FeaturedVideo = () => {
             console.error('Error fetching featured video:', error);
           }
           setFeaturedVideo({
-            media_url: "a3ICNMQW7Ok", // Default video ID
+            url: "a3ICNMQW7Ok", // Default video ID
             title: "Chasing Sunsets: Chapter 4",
             caption: "Moments from our month crossing mountain passes, discovering hidden lakes, and meeting kindred spirits along the way.",
-            linked_post_id: null
+            post_id: null
           });
           setLoading(false);
           return;
@@ -55,11 +55,11 @@ const FeaturedVideo = () => {
         console.log('Featured video data:', data);
 
         // If we have a linked post, get its slug
-        if (data && data.linked_post_id) {
+        if (data && data.post_id) {
           const { data: postData, error: postError } = await supabase
             .from('posts')
             .select('slug')
-            .eq('id', data.linked_post_id)
+            .eq('id', data.post_id)
             .single();
 
           if (!postError && postData) {
@@ -104,7 +104,7 @@ const FeaturedVideo = () => {
 
   if (!featuredVideo) return null;
 
-  const videoId = extractYoutubeId(featuredVideo.media_url);
+  const videoId = extractYoutubeId(featuredVideo.url);
   console.log('Using video ID:', videoId);
 
   return (
