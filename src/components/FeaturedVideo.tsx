@@ -7,8 +7,7 @@ type FeaturedVideo = {
   url: string;
   title: string | null;
   caption: string | null;
-  post_id: string | null;
-  post_slug?: string | null;
+  post_slug: string | null;
 };
 
 const extractYoutubeId = (url: string) => {
@@ -30,10 +29,10 @@ const FeaturedVideo = () => {
         // Fetch the featured video from media table
         const { data, error } = await supabase
           .from('media')
-          .select('url, title, caption, post_id')
+          .select('url, title, caption, post_slug')
           .eq('media_type', 'video')
           .eq('is_featured_video_section', true)
-          .order('featured_sort_order', { ascending: true })
+          .order('created_at', { ascending: true })
           .limit(1)
           .single();
 
@@ -46,36 +45,14 @@ const FeaturedVideo = () => {
             url: "a3ICNMQW7Ok", // Default video ID
             title: "Chasing Sunsets: Chapter 4",
             caption: "Moments from our month crossing mountain passes, discovering hidden lakes, and meeting kindred spirits along the way.",
-            post_id: null
+            post_slug: null
           });
           setLoading(false);
           return;
         }
 
         console.log('Featured video data:', data);
-
-        // If we have a linked post, get its slug
-        if (data && data.post_id) {
-          const { data: postData, error: postError } = await supabase
-            .from('posts')
-            .select('slug')
-            .eq('id', data.post_id)
-            .single();
-
-          if (!postError && postData) {
-            console.log('Linked post found:', postData);
-            setFeaturedVideo({
-              ...data,
-              post_slug: postData.slug
-            });
-          } else {
-            console.log('No linked post found or error:', postError);
-            setFeaturedVideo(data);
-          }
-        } else if (data) {
-          setFeaturedVideo(data);
-        }
-
+        setFeaturedVideo(data);
         setLoading(false);
       } catch (err) {
         console.error('Unexpected error fetching featured video:', err);
