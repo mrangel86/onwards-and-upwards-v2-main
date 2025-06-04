@@ -5,85 +5,84 @@ import { cn } from "@/lib/utils";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
-type FeaturedPost = {
+type HeroCarouselItem = {
   title: string;
-  excerpt: string;
-  hero_image_url: string;
-  slug: string;
+  caption: string;
+  url: string;
+  post_slug: string;
 }
 
 const HeroCarousel = () => {
   const [current, setCurrent] = useState(0);
-  const [featuredPosts, setFeaturedPosts] = useState<FeaturedPost[]>([]);
+  const [carouselItems, setCarouselItems] = useState<HeroCarouselItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch featured posts from Supabase
+  // Fetch hero carousel items from centralized media table
   useEffect(() => {
-    const fetchFeaturedPosts = async () => {
+    const fetchCarouselItems = async () => {
       try {
-        console.log('Fetching featured posts...');
-        // First fetch the featured posts
+        console.log('Fetching hero carousel items...');
+        // Fetch from the new media table
         const { data, error } = await supabase
-          .from('posts')
-          .select('title, excerpt, hero_image_url, slug')
-          .eq('featuredhero', true)
-          .eq('published', true)
+          .from('media')
+          .select('title, caption, url, post_slug')
+          .eq('is_hero_carousel', true)
           .order('created_at', { ascending: false })
           .limit(5);
 
         if (error) {
-          console.error('Error fetching featured posts:', error);
+          console.error('Error fetching hero carousel items:', error);
           return;
         }
 
         if (data && data.length > 0) {
-          setFeaturedPosts(data);
+          setCarouselItems(data);
         } else {
-          // Fallback to default slides if no featured posts
-          setFeaturedPosts([
+          // Fallback to default slides if no carousel items
+          setCarouselItems([
             {
-              hero_image_url: "https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=1600&q=80",
+              url: "https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=1600&q=80",
               title: "Stories from the Road",
-              excerpt: "Discover our favorite moments across Europe.",
-              slug: "#"
+              caption: "Discover our favorite moments across Europe.",
+              post_slug: "#"
             },
             {
-              hero_image_url: "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?w=1600&q=80",
+              url: "https://images.unsplash.com/photo-1500375592092-40eb2168fd21?w=1600&q=80",
               title: "Nature's Grandeur",
-              excerpt: "Waves, forests, mountains & wild encounters.",
-              slug: "#"
+              caption: "Waves, forests, mountains & wild encounters.",
+              post_slug: "#"
             },
             {
-              hero_image_url: "https://zrtgkvpbptxueetuqlmb.supabase.co/storage/v1/object/public/legacy-posts/Great-Wall-20140503-48.jpg",
+              url: "https://zrtgkvpbptxueetuqlmb.supabase.co/storage/v1/object/public/legacy-posts/Great-Wall-20140503-48.jpg",
               title: "Family Journeys",
-              excerpt: "Traveling together, one adventure at a time.",
-              slug: "#"
+              caption: "Traveling together, one adventure at a time.",
+              post_slug: "#"
             }
           ]);
         }
         setLoading(false);
       } catch (err) {
-        console.error('Unexpected error fetching featured posts:', err);
+        console.error('Unexpected error fetching hero carousel items:', err);
         setLoading(false);
       }
     };
 
-    fetchFeaturedPosts();
+    fetchCarouselItems();
   }, []);
 
-  const next = () => setCurrent((prev) => (prev + 1) % featuredPosts.length);
-  const prev = () => setCurrent((prev) => (prev - 1 + featuredPosts.length) % featuredPosts.length);
+  const next = () => setCurrent((prev) => (prev + 1) % carouselItems.length);
+  const prev = () => setCurrent((prev) => (prev - 1 + carouselItems.length) % carouselItems.length);
 
   // Auto advance slides
   useEffect(() => {
-    if (featuredPosts.length <= 1) return;
+    if (carouselItems.length <= 1) return;
     
     const timer = setTimeout(() => {
       next();
     }, 6000);
     
     return () => clearTimeout(timer);
-  }, [current, featuredPosts.length]);
+  }, [current, carouselItems.length]);
 
   if (loading) {
     return (
@@ -95,7 +94,7 @@ const HeroCarousel = () => {
 
   return (
     <section className="relative w-full h-[70vh] flex items-center justify-center overflow-hidden">
-      {featuredPosts.map((post, i) => (
+      {carouselItems.map((item, i) => (
         <div
           key={i}
           className={cn(
@@ -105,18 +104,18 @@ const HeroCarousel = () => {
         >
           <div 
             className="w-full h-full bg-cover bg-center"
-            style={{ backgroundImage: `url(${post.hero_image_url})` }}
+            style={{ backgroundImage: `url(${item.url})` }}
           >
             <div className="w-full h-full flex items-center justify-center text-white bg-black/40 bg-blend-multiply">
               <div className="max-w-2xl mx-auto text-center px-4">
                 <h1 className="font-playfair text-3xl lg:text-5xl font-bold mb-4 drop-shadow-lg animate-fade-in">
-                  {post.title}
+                  {item.title}
                 </h1>
                 <div className="w-16 h-px bg-white/60 mx-auto mb-4" />
                 <p className="text-lg lg:text-2xl mb-6 drop-shadow animate-fade-in">
-                  {post.excerpt || "Read more about our journey..."}
+                  {item.caption || "Read more about our journey..."}
                 </p>
-                <Link to={`/posts/${post.slug}`} className="inline-block">
+                <Link to={`/posts/${item.post_slug}`} className="inline-block">
                   <button className="bg-accent hover:bg-primary text-white font-semibold px-6 py-3 rounded-full shadow-lg transition animate-fade-in">
                     Read More
                   </button>
@@ -141,7 +140,7 @@ const HeroCarousel = () => {
         <ChevronRight size={28} />
       </button>
       <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
-        {featuredPosts.map((_, i) => (
+        {carouselItems.map((_, i) => (
           <button
             key={i}
             onClick={() => setCurrent(i)}
